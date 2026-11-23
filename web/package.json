@@ -1,0 +1,15 @@
+{
+  "name": "melch-agentguard-web",
+  "version": "1.2.0",
+  "description": "AgentGuard Storefront, Interactive Scorecard & Cloudflare Backend",
+  "private": true,
+  "scripts": {
+    "serve": "npx serve public -l 3000",
+    "worker:dev": "npm --prefix worker run dev",
+    "worker:deploy": "npm --prefix worker run deploy",
+    "test:scorecard": "node -e \"console.log('Validating mock JSON'); JSON.parse(require('fs').readFileSync('test/mock-report.json')); console.log('Mock JSON OK');\""
+  },
+  "keywords": ["ai-safety", "agentguard", "cloudflare-pages", "cloudflare-workers", "d1"],
+  "author": "Lin <lin@melchtech.com>",
+  "license": "MIT"
+}

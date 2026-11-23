@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  cli-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pytest and package
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install -e .
+      - name: Run CLI tests
+        run: python -m pytest tests
+      - name: Smoke test benchmark runner
+        run: |
+          python -m agentguard list-scenarios
+          python -m agentguard run --target mock-hardened --out /tmp/ci_report.json --html /tmp/ci_report.html
+
+  web-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check frontend scripts
+        run: |
+          node --check web/public/js/sample-data.js
+          node --check web/public/js/scorecard.js
+          node --check web/public/js/app.js
+      - name: Verify CLI-to-Web report schema compatibility
+        run: |
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            import { ScorecardViewer } from './web/public/js/scorecard.js';
+            const v = new ScorecardViewer();
+            const cliReport = JSON.parse(fs.readFileSync('cli/samples/demo_report.json', 'utf8'));
+            const norm = v.normalizeReport(cliReport);
+            if (norm.summary.total_tests !== 30 || norm.summary.grade !== 'A') {
+              throw new Error('Unexpected normalized result: ' + JSON.stringify(norm.summary));
+            }
+            console.log('Verified CLI->Web schema compatibility:', norm.summary.grade, norm.summary.score + '%');
+          "
